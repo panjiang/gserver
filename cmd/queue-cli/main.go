@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -105,12 +106,22 @@ func newClient(server string, id string, wg *sync.WaitGroup) {
 	c.requestToken()
 }
 
-const (
-	server        = "localhost:8080" // 服务器地址
-	clientsNumber = 2000             // 机器人数量
-)
+// const (
+// 	server = "47.105.87.219:8080" // 远程服务器地址
+// 	// server        = "localhost:8080" // 本地服务器地址
+// 	clientsNumber = 10000 // 客户端数量
+// )
+
+var server string // 服务器地址
+var clientsNumber int
+
+func init() {
+	flag.StringVar(&server, "s", "localhost:8080", "server addr")
+	flag.IntVar(&clientsNumber, "n", 10000, "number of clients")
+}
 
 func main() {
+	flag.Parse()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
@@ -122,7 +133,7 @@ func main() {
 		clientID := fmt.Sprintf("%d", i)
 
 		go newClient(server, clientID, wg)
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 2)
 	}
 	wg.Wait()
 }

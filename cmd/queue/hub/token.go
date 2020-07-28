@@ -20,7 +20,7 @@ func issueTokenOnce(h *hub) (err error) {
 		return
 	}
 
-	log.Debug().Int("n", len(elements)).Int("hds", len(h.hds)).Msg("issueTokenOnce")
+	log.Debug().Int("limit", conf.Limit).Int("count", len(elements)).Int("hds", len(h.hds)).Msg("issue tokens")
 	if len(elements) == 0 {
 		return
 	}
@@ -43,7 +43,6 @@ func issueTokenOnce(h *hub) (err error) {
 	if err = h.dao.TokenRequestRem(maxScore); err != nil {
 		return
 	}
-	log.Debug().Msg("issueTokenOnce#1")
 
 	// 通知客户端
 	for id, token := range tokens {
@@ -53,7 +52,6 @@ func issueTokenOnce(h *hub) (err error) {
 		b, _ := proto.Marshal(push)
 		h.Notice(id, codes.TokenPush, b)
 	}
-	log.Debug().Msg("issueTokenOnce#2")
 
 	return
 }

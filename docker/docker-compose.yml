@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  queue:
+    image: docker.panjiang.xyz/gserver/queue
+    ports:
+      - "8080:8080"
+    volumes:
+      - /docker/gserver/queue:/data
+    command: ./queue -conf=/data/config.yml
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:5
+    volumes:
+      - /docker/gserver/redis:/data
+    command: redis-server --appendonly yes
+
+networks:
+  default:
+    external:
+      name: gserver

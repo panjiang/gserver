@@ -52,6 +52,7 @@ func Parse(name string) (*Config, error) {
 		return nil, errors.New("must specify config file")
 	}
 
+	log.Info().Str("filename", filename).Msg("read config")
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/panjiang/gserver/cmd/queue/hub"
 	"github.com/panjiang/gserver/pkg/config"
+	"github.com/panjiang/gserver/pkg/prof"
 	"github.com/panjiang/gserver/pkg/server"
 	"github.com/rs/zerolog/log"
 )
@@ -10,6 +13,8 @@ import (
 const name = "QueueService"
 
 func main() {
+	flag.Parse()
+
 	// 解析配置文件
 	conf, err := config.Parse(name)
 	if err != nil {
@@ -20,6 +25,8 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("create hub")
 	}
+
+	go prof.Run()
 
 	// 启动服务
 	log.Info().Str("name", name).Str("addr", conf.Queue.Addr).Msg("run server")
