@@ -1,0 +1,12 @@
+queueService:
+  # 服务器绑定地址
+  addr: "0.0.0.0:8080"
+
+  # 每秒发放令牌数量限制
+  limit: 1000
+  # 令牌有效期，单位秒
+  tokenLifetime: 5
+
+redis:
+  addr: "redis:6379"
+  auth: ""

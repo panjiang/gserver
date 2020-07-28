@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  queue:
+    image: gserver/queue
+    ports:
+      - "8080:8080"
+
+networks:
+  default:
+    external:
+      name: gserver

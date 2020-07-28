@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:
+  redis:
+    image: redis:5
+    volumes:
+      - ~/docker/gserver/redis:/data
+    command: redis-server --appendonly yes
+
+networks:
+  default:
+    external:
+      name: gserver

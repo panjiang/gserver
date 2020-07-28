@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package queue;
+
+// 请求进入令牌
+message RequestTokenReq {
+    string id = 1;
+}
+
+// 返回是否需要排队
+// 1. 如果 frontNumber == 0 && oldToken == ""，等待token生成，异步推送过来
+// 2. 如果 frontNumber == 0 && oldToken != ""，可以拿此token，去登录
+// 3. 如果 frontNumber > 0，需要排队
+message RequestTokenResp {
+    int32 frontNumber = 1; // 前面排队的人数
+    int32 waitSeconds = 2; // 预计等待时长（秒）
+    string oldToken = 3;   // 存在有效期内的旧token
+}
+
+// 排到了，推送token
+message RequestTokenPush {
+    string token = 1;
+}
