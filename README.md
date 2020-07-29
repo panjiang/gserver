@@ -26,6 +26,8 @@ docker # 容器相关配置文件
   - docker-compose.lib.yml # 本地测试版本，单独启动基础服务
 pkg # 公共方法和类
   - utils # 工具包
+config.yml # 服务配置文件
+Makefile # 命令封装
 ```
 
 ## 通信协议
@@ -68,6 +70,7 @@ pkg # 公共方法和类
 ## 测试数据
 
 > 测试前请确保：
+>
 > 1. 系统放开了打开文件数量的限制 `ulimit -n`
 > 2. 优化了内核参数`net.ipv4.tcp_tw_reuse = 1`
 
