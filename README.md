@@ -38,7 +38,7 @@ pkg # 公共方法和类
 
 ## QueueService 技术实现
 
-用 Redis 的 Sorted Set 结构作为请求队列，客户端唯一 ID 作为 Member，精简的微秒时间戳作为 Score `score = float64(当前微秒时间戳 - 2020开始时微秒时间戳)`
+用 Redis 的 Sorted Set 结构作为请求队列，客户端唯一 ID 作为 Member，精简的微秒时间戳作为 Score `score = float64(当前微秒时间戳 - 2020年开始时微秒时间戳)`
 
 有独立的协程负责分批颁发 token，位置在 `cmd/queue/hub/token/token.go`
 
@@ -67,7 +67,9 @@ pkg # 公共方法和类
 
 ## 测试数据
 
-> 测试前请确保系统放开了打开文件数量的限制，
+> 测试前请确保：
+> 1. 系统放开了打开文件数量的限制 `ulimit -n`
+> 2. 优化了内核参数`net.ipv4.tcp_tw_reuse = 1`
 
 5000 个客户端，Dial 时间间隔为 1ms
 
