@@ -1,0 +1,10 @@
+# exclude binary file
+*
+!*.*
+!*/
+!Makefile
+!Dockerfile
+
+# exclude specify patterns
+tests/*
+~*
