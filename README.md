@@ -19,6 +19,7 @@ cmd # 启动程序
       - token # token相关的处理方法
     - hub # 连接分发
     - model # 数据模型
+    - Dockerfile # Docker编译配置
   - queue-cli # 服务客户端
 docker # 容器相关配置文件
   - docker-compose.yml # 发布版本
