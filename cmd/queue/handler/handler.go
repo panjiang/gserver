@@ -73,8 +73,7 @@ Loop:
 			}
 
 			h.comm.Send(msg.Code, out)
-			dur := time.Now().Sub(msg.CreatedAt)
-			log.Debug().Dur("duration", dur).Uint16("code", msg.Code).Str("user", h.user.ID).Send()
+			log.Debug().Dur("duration", time.Now().Sub(msg.CreatedAt)).Uint16("code", msg.Code).Str("user", h.user.ID).Send()
 		}
 	}
 

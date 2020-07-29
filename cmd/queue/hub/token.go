@@ -11,6 +11,7 @@ import (
 )
 
 func issueTokenOnce(h *hub) (err error) {
+	t := time.Now()
 	// 取出前n名请求的id
 	conf := h.conf.Queue
 	n := conf.Limit - 1
@@ -20,7 +21,6 @@ func issueTokenOnce(h *hub) (err error) {
 		return
 	}
 
-	log.Debug().Int("limit", conf.Limit).Int("count", len(elements)).Int("hds", len(h.hds)).Msg("issue tokens")
 	if len(elements) == 0 {
 		return
 	}
@@ -46,12 +46,16 @@ func issueTokenOnce(h *hub) (err error) {
 
 	// 通知客户端
 	for id, token := range tokens {
-		push := &queue.RequestTokenPush{
-			Token: token,
-		}
-		b, _ := proto.Marshal(push)
-		h.Notice(id, codes.TokenPush, b)
+		go func(id, token string) {
+			push := &queue.RequestTokenPush{
+				Token: token,
+			}
+			b, _ := proto.Marshal(push)
+			h.Notice(id, codes.TokenPush, b)
+		}(id, token)
 	}
+
+	log.Debug().Int("limit", conf.Limit).Int("count", len(elements)).Dur("dur", time.Since(t)).Msg("issue tokens")
 
 	return
 }

@@ -11,8 +11,21 @@ import (
 	"github.com/panjiang/gserver/cmd/queue/models"
 )
 
+var timeStart int64 // 起始微秒级时间戳
+
 func init() {
 	register(codes.TokenRequest, requestToken)
+
+	layout := "2006-01-02T15:04:05.000Z"
+	str := "2020-01-01T00:00:00.000Z"
+	t, _ := time.Parse(layout, str)
+	timeStart = t.UnixNano() / int64(time.Microsecond)
+
+}
+
+// 生成score = 当前微秒级时间戳 - 2020开始时微秒级时间戳
+func genScore() float64 {
+	return float64(time.Now().UnixNano()/int64(time.Microsecond) - timeStart)
 }
 
 func requestToken(h *Handler, in []byte) (resp proto.Message, err error) {
@@ -55,8 +68,7 @@ func requestToken(h *Handler, in []byte) (resp proto.Message, err error) {
 			return
 		}
 		// 不存在，添加进去
-		score := float64(time.Now().UnixNano() / int64(time.Microsecond))
-		_, err = h.dao.TokenRequestAdd(req.Id, score)
+		_, err = h.dao.TokenRequestAdd(req.Id, genScore())
 		if err != nil {
 			return
 		}

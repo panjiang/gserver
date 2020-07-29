@@ -5,7 +5,6 @@ import (
 
 	"github.com/panjiang/gserver/cmd/queue/hub"
 	"github.com/panjiang/gserver/pkg/config"
-	"github.com/panjiang/gserver/pkg/prof"
 	"github.com/panjiang/gserver/pkg/server"
 	"github.com/rs/zerolog/log"
 )
@@ -25,8 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("create hub")
 	}
-
-	go prof.Run()
 
 	// 启动服务
 	log.Info().Str("name", name).Str("addr", conf.Queue.Addr).Msg("run server")

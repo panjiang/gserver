@@ -3,8 +3,6 @@ package comm
 import (
 	"net"
 	"time"
-
-	"github.com/panjiang/gserver/pkg/prof"
 )
 
 // Comm 协议通信控制
@@ -76,7 +74,6 @@ Loop:
 		select {
 		case <-c.quit:
 			c.conn.Close()
-			prof.Add(-1)
 			break Loop
 		}
 	}
@@ -93,9 +90,8 @@ func NewComm(conn net.Conn) *Comm {
 	c := &Comm{
 		conn:     conn,
 		readChan: make(chan *Message),
-		quit:     make(chan bool),
+		quit:     make(chan bool, 1),
 	}
-	prof.Add(1)
 	go c.reader()
 	go c.main()
 

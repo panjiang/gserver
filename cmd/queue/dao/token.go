@@ -40,7 +40,7 @@ func (d *Dao) TokenRequestRem(maxScore float64) error {
 
 // TokenRelate 关联token和客户端id
 func (d *Dao) TokenRelate(tokens map[string]string, dur time.Duration) error {
-	pipe := d.rdb.Pipeline()
+	pipe := d.rdb.TxPipeline()
 	for clientID, token := range tokens {
 		key := redisdb.GlobalKey(kpTokenIssue, clientID)
 		pipe.Set(key, token, dur).Result()

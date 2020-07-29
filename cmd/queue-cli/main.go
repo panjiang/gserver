@@ -92,7 +92,8 @@ Loop:
 }
 
 func newClient(server string, id string, wg *sync.WaitGroup) {
-	conn, err := net.Dial("tcp", server)
+	d := net.Dialer{Timeout: time.Second * 10}
+	conn, err := d.Dial("tcp", server)
 	if err != nil {
 		panic(err)
 	}
@@ -106,18 +107,12 @@ func newClient(server string, id string, wg *sync.WaitGroup) {
 	c.requestToken()
 }
 
-// const (
-// 	server = "47.105.87.219:8080" // 远程服务器地址
-// 	// server        = "localhost:8080" // 本地服务器地址
-// 	clientsNumber = 10000 // 客户端数量
-// )
-
 var server string // 服务器地址
 var clientsNumber int
 
 func init() {
 	flag.StringVar(&server, "s", "localhost:8080", "server addr")
-	flag.IntVar(&clientsNumber, "n", 10000, "number of clients")
+	flag.IntVar(&clientsNumber, "n", 3000, "number of clients")
 }
 
 func main() {
@@ -133,7 +128,7 @@ func main() {
 		clientID := fmt.Sprintf("%d", i)
 
 		go newClient(server, clientID, wg)
-		time.Sleep(time.Millisecond * 2)
+		time.Sleep(time.Millisecond * 1)
 	}
 	wg.Wait()
 }
