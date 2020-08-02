@@ -66,7 +66,7 @@ Makefile # 命令封装
 1. 执行`make image-tag`，推送镜像到远程仓库
 2. 远程机器创建`/docker/gserver`目录，放入`docker/docker-compose.yml`容器文件
 3. 创建`/docker/gserver/queue`目录，放入`config.yml`服务配置文件
-4. 启动服务`docker-compose up -d`
+4. 启动服务`docker-compose -p gserver up -d`
 
 ## 测试数据
 
@@ -75,40 +75,43 @@ Makefile # 命令封装
 > 1. 系统放开了打开文件数量的限制 `ulimit -n`
 > 2. 优化了内核参数`net.ipv4.tcp_tw_reuse = 1`
 
-5000 个客户端，Dial 时间间隔为 1ms
+10000 个客户端，Dial 时间间隔为 0.1ms
 
-```
-go run cmd/queue-cli/main.go -s=localhost:8080 -n=5000
+```console
+$ make run-cli
 ```
 
 服务器每秒限制颁发 1000 个 token，颁发逻辑在 10ms 以内
 
 ```
-queue_1  | 6:12AM DBG issue tokens count=858 dur=5.8419 limit=1000
-queue_1  | 6:12AM DBG issue tokens count=920 dur=6.0305 limit=1000
-queue_1  | 6:12AM DBG issue tokens count=923 dur=6.1036 limit=1000
-queue_1  | 6:12AM DBG issue tokens count=921 dur=9.0467 limit=1000
-queue_1  | 6:12AM DBG issue tokens count=920 dur=7.4056 limit=1000
-queue_1  | 6:12AM DBG issue tokens count=458 dur=2.7069 limit=1000
+queue_1  | 8:13AM DBG issue tokens count=1000 dur=6.1115 limit=1000
+queue_1  | 8:13AM DBG issue tokens count=1000 dur=5.5541 limit=1000
+queue_1  | 8:13AM DBG issue tokens count=1000 dur=5.4787 limit=1000
+queue_1  | 8:13AM DBG issue tokens count=1000 dur=6.8553 limit=1000
+queue_1  | 8:13AM DBG issue tokens count=1000 dur=5.5517 limit=1000
 ```
 
 服务器从接收请求到返回时间，在 0.3ms 左右
 
 ```
-queue_1  | 6:16AM DBG  code=100 duration=0.3093 user=4034
-queue_1  | 6:16AM DBG  code=100 duration=0.3452 user=4035
-queue_1  | 6:16AM DBG  code=100 duration=0.3121 user=4036
-queue_1  | 6:16AM DBG  code=100 duration=0.3303 user=4037
-queue_1  | 6:16AM DBG  code=100 duration=0.3365 user=4038
-queue_1  | 6:16AM DBG  code=100 duration=0.3607 user=4039
-queue_1  | 6:16AM DBG  code=100 duration=0.3693 user=4040
-queue_1  | 6:16AM DBG  code=100 duration=0.3326 user=4041
-queue_1  | 6:16AM DBG  code=100 duration=0.3256 user=4042
+queue_1  | 8:14AM DBG  code=100 duration=0.49 user=4108
+queue_1  | 8:14AM DBG  code=100 duration=0.261 user=4130
+queue_1  | 8:14AM DBG  code=100 duration=0.194 user=4110
+queue_1  | 8:14AM DBG  code=100 duration=0.2261 user=4103
+queue_1  | 8:14AM DBG  code=100 duration=0.2263 user=4101
+queue_1  | 8:14AM DBG  code=100 duration=0.2924 user=4104
 ```
 
-服务器 CPU 高峰：47%，内存 0.2%
+服务器 CPU 高峰：152%，内存：0.65%
+
+```console
+$ docker stats
+```
 
 ```
-  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
-13625 root      20   0 1454032  31200   5916 S  47.0  0.2   0:01.56 main
+CONTAINER ID        NAME                CPU %               MEM USAGE / LIMIT     MEM %               NET I/O
+c0819969b6e8        gserver_queue_1     152.03%             83.37MiB / 12.44GiB   0.65%               39.2MB / 44.3MB     0B / 0B             19
+0f9611b228dd        gserver_redis_1     33.46%              17.27MiB / 12.44GiB   0.14%               151MB / 88.9MB      0B / 0B             4
+cdb7fd240495        gserver-queue-cli   139.28%             69.09MiB / 12.44GiB   0.54%               0B / 0B             0B / 0B             11
+
 ```

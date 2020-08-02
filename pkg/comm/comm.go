@@ -3,97 +3,84 @@ package comm
 import (
 	"net"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
+
+type msgProcess func(code uint16, body []byte)
 
 // Comm 协议通信控制
 type Comm struct {
-	conn     net.Conn
-	readChan chan *Message
-	quit     chan bool
-}
-
-// Msgs 已接收的消息
-func (c *Comm) Msgs() <-chan *Message {
-	return c.readChan
+	conn        net.Conn
+	readTimeout time.Duration
+	cache       []byte
+	buf         []byte
 }
 
 // Send 发送消息
 func (c *Comm) Send(code uint16, body []byte) error {
 	msg := &Message{Code: code, Body: body}
-	_, err := c.conn.Write(msg.Pack())
+	_, err := c.conn.Write(msg.pack())
+	if err != nil {
+		log.Error().Err(err).Msg("send")
+	}
 	return err
 }
 
-func (c *Comm) reader() {
-	data := make([]byte, 0)
-	buf := make([]byte, 1024)
-
-	expectSize := headTotalLen
+// ReadOne 读取一个请求
+func (c *Comm) ReadOne() (*Message, error) {
 	var msg *Message
+	expectSize := headTotalLen
 	for {
-		n, err := c.conn.Read(buf)
+		c.conn.SetReadDeadline(time.Now().Add(c.readTimeout))
+
+		n, err := c.conn.Read(c.buf)
 		if err != nil {
-			break
+			return nil, err
 		}
 
 		// 未读全，继续读
 		// 先读包长，再读包体
-		data = append(data, buf[:n]...)
-		if len(data) < expectSize {
+		c.cache = append(c.cache, c.buf[:n]...)
+		if len(c.cache) < expectSize {
 			continue
 		}
 
 		if msg == nil {
-			msg = NewMessage(data[:headTotalLen])
+			msg = NewMessage(c.cache[:headTotalLen])
 			expectSize = int(msg.bodySize)
-			data = data[headTotalLen:]
+			c.cache = c.cache[headTotalLen:]
 		}
-		if len(data) < expectSize {
+		if len(c.cache) < expectSize {
 			continue
 		}
 
 		// 截取包体
-		msg.Body = data[:expectSize]
+		msg.Body = c.cache[:expectSize]
 		msg.CreatedAt = time.Now()
-		c.readChan <- msg
-		// log.Debug().Uint16("code", msg.Code).Msg("recv")
 
 		// 保留剩余数据
-		data = data[expectSize:]
+		c.cache = c.cache[expectSize:]
 
-		// 重置包实例
-		msg = nil
+		return msg, nil
 	}
-	close(c.readChan)
-	c.quit <- true
-}
-
-func (c *Comm) main() {
-Loop:
-	for {
-		select {
-		case <-c.quit:
-			c.conn.Close()
-			break Loop
-		}
-	}
-	close(c.quit)
 }
 
 // Close 手动关闭
 func (c *Comm) Close() {
+	if c.conn == nil {
+		return
+	}
 	c.conn.Close()
+	c.conn = nil
 }
 
 // NewComm 创建协议通信控制实例
-func NewComm(conn net.Conn) *Comm {
-	c := &Comm{
-		conn:     conn,
-		readChan: make(chan *Message),
-		quit:     make(chan bool, 1),
+func NewComm(conn net.Conn, readTimeout time.Duration) *Comm {
+	return &Comm{
+		conn:        conn,
+		readTimeout: readTimeout,
+		cache:       make([]byte, 0),
+		buf:         make([]byte, 1024),
 	}
-	go c.reader()
-	go c.main()
-
-	return c
 }

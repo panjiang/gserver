@@ -18,26 +18,28 @@ import (
 
 // Client 客户端类
 type Client struct {
-	ID   string
-	comm *comm.Comm
+	id   string
+	cm   *comm.Comm
 	wg   *sync.WaitGroup
-	done chan bool
+	done chan struct{}
 }
 
-func (c *Client) requestToken() {
+func (c *Client) requestToken(isFirst bool) {
 	out, err := proto.Marshal(&queue.RequestTokenReq{
-		Id: c.ID,
+		Id: c.id,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	c.comm.Send(codes.TokenRequest, out)
+	if err := c.cm.Send(codes.TokenRequest, out); err != nil {
+		panic(err)
+	}
 }
 
 func (c *Client) gotToken(token string, isNew bool) {
-	log.Debug().Str("id", c.ID).Str("token", token).Bool("isNew", isNew).Msg("got token")
-	c.done <- true
+	log.Debug().Str("id", c.id).Str("token", token).Bool("isNew", isNew).Msg("got token")
+	c.done <- struct{}{}
 }
 
 func (c *Client) requestTokenResp(in []byte) {
@@ -53,9 +55,9 @@ func (c *Client) requestTokenResp(in []byte) {
 
 	// 需要排队，每秒请求一次状态，直到排到
 	if resp.FrontNumber > 0 {
-		log.Debug().Str("id", c.ID).Int32("frontNumber", resp.FrontNumber).Msg("token request")
+		log.Debug().Str("id", c.id).Int32("frontNumber", resp.FrontNumber).Msg("token request")
 		time.Sleep(time.Second)
-		c.requestToken()
+		c.requestToken(false)
 	}
 }
 
@@ -67,27 +69,32 @@ func (c *Client) requestTokenPush(in []byte) {
 	c.gotToken(resp.Token, true)
 }
 
-func (c *Client) recv() {
-	msgs := c.comm.Msgs()
+func (c *Client) process(msg *comm.Message) {
+	switch msg.Code {
+	case codes.TokenRequest:
+		c.requestTokenResp(msg.Body)
+	case codes.TokenPush:
+		c.requestTokenPush(msg.Body)
+	}
+}
+
+func (c *Client) run() {
 Loop:
 	for {
 		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				msg = nil
-				break Loop
-			}
-			switch msg.Code {
-			case codes.TokenRequest:
-				c.requestTokenResp(msg.Body)
-			case codes.TokenPush:
-				c.requestTokenPush(msg.Body)
-			}
 		case <-c.done:
 			break Loop
+		default:
 		}
+
+		msg, err := c.cm.ReadOne()
+		if err != nil {
+			panic(err)
+		}
+		c.process(msg)
 	}
-	c.comm.Close()
+
+	c.cm.Close()
 	c.wg.Done()
 }
 
@@ -97,14 +104,22 @@ func newClient(server string, id string, wg *sync.WaitGroup) {
 	if err != nil {
 		panic(err)
 	}
-	comm := comm.NewComm(conn)
-	c := &Client{ID: id, comm: comm, wg: wg, done: make(chan bool, 1)}
 
-	// 处理接收
-	go c.recv()
+	cm := comm.NewComm(conn, time.Second*60)
+	c := &Client{
+		id:   id,
+		wg:   wg,
+		cm:   cm,
+		done: make(chan struct{}, 1),
+	}
 
 	// 发起请求
-	c.requestToken()
+	go func() {
+		c.requestToken(true)
+	}()
+
+	// 处理接收
+	c.run()
 }
 
 var server string // 服务器地址
@@ -120,15 +135,18 @@ func main() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	wg := &sync.WaitGroup{}
+	var wg sync.WaitGroup
 	for i := 0; i < clientsNumber; i++ {
 		wg.Add(1)
 
 		// 客户端唯一ID
 		clientID := fmt.Sprintf("%d", i)
 
-		go newClient(server, clientID, wg)
-		time.Sleep(time.Millisecond * 1)
+		go newClient(server, clientID, &wg)
+		time.Sleep(time.Microsecond * 100)
 	}
+
 	wg.Wait()
+
+	time.Sleep(time.Second * 1)
 }

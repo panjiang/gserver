@@ -33,6 +33,13 @@ func (h *hub) Rem(id string) {
 	h.mu.Unlock()
 }
 
+func (h *hub) Count() int {
+	defer h.mu.RUnlock()
+	h.mu.RLock()
+	return len(h.hds)
+
+}
+
 func (h *hub) Notice(id string, code uint16, data []byte) {
 	h.mu.RLock()
 	hd, ok := h.hds[id]

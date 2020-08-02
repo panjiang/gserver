@@ -35,7 +35,7 @@ func NewMessage(b []byte) *Message {
 }
 
 // Pack 组包
-func (m *Message) Pack() []byte {
+func (m *Message) pack() []byte {
 	b := make([]byte, headTotalLen)
 	start := 0
 	end := start + codeLen

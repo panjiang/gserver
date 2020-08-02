@@ -27,29 +27,32 @@ image:
 
 # 启动基础服务容器
 up-lib:
-	docker-compose -f docker/docker-compose.lib.yml up  -d
+	docker-compose -f docker/docker-compose.lib.yml -p gserver up -d
 
 down-lib:
 	docker-compose -f docker/docker-compose.lib.yml down
 
 # 启动自建服务容器
 up:
-	docker-compose -f docker/docker-compose.cmd.yml up -d
+	docker-compose -f docker/docker-compose.cmd.yml -p gserver up -d
 
 down:
 	docker-compose -f docker/docker-compose.cmd.yml down
 
 # 重新编译并启动容器
+run-cli: CMD_LIST=queue
 run: image
-	docker-compose -f docker/docker-compose.cmd.yml up
+	docker-compose -f docker/docker-compose.cmd.yml -p gserver up
 
 # 运行客户端
-run-cli:
-	go run cmd/queue-cli/main.go -s=localhost:8080 -n=5000
+run-cli: CMD_LIST=queue-cli
+run-cli: image
+	docker run --rm --net=host --name=gserver-queue-cli gserver/queue-cli ./queue-cli -s=localhost:8080 -n=10000
 
 # 运行客户端
-run-cli1:
-	go run cmd/queue-cli/main.go -s=wuyabiji.com:8080 -n=1000
+run-cli1: CMD_LIST=queue-cli
+run-cli1: image
+	docker run --rm --net=host --name=gserver-queue-cli gserver/queue-cli ./queue-cli -s=wuyabiji.com:8080 -n=5000
 
 # 镜像发布到远程仓库
 image-tag:
@@ -61,3 +64,6 @@ image-tag:
 		docker tag $$image docker.panjiang.xyz/$$image; \
 		docker push docker.panjiang.xyz/$$image; \
 	done
+
+test:
+	go run tests/test.go

@@ -20,7 +20,6 @@ func issueTokenOnce(h *hub) (err error) {
 	if err != nil {
 		return
 	}
-
 	if len(elements) == 0 {
 		return
 	}
